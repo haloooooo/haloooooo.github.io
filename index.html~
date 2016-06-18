@@ -1,8 +1,8 @@
 ---
 layout: page
-description: "一生想做浪漫极客"
+description: "JUST FOR FUN!"
 ---
-
+<!-- 显示博客标题，二级标题及摘要 -->
 {% for post in paginator.posts %}
 <div class="post-preview">
     <a href="{{ post.url | prepend: site.baseurl }}">
@@ -25,17 +25,17 @@ description: "一生想做浪漫极客"
 <hr>
 {% endfor %}
 
-<!-- Pager -->
+<!-- Pager 显示页面下方的下一页，上一页 -->
 {% if paginator.total_pages > 1 %}
 <ul class="pager">
     {% if paginator.previous_page %}
     <li class="previous">
-        <a href="{{ paginator.previous_page_path | prepend: site.baseurl | replace: '//', '/' }}">&larr; Newer Posts</a>
+        <a href="{{ paginator.previous_page_path | prepend: site.baseurl | replace: '//', '/' }}">&larr; Prev Posts</a>
     </li>
     {% endif %}
     {% if paginator.next_page %}
     <li class="next">
-        <a href="{{ paginator.next_page_path | prepend: site.baseurl | replace: '//', '/' }}">Older Posts &rarr;</a>
+        <a href="{{ paginator.next_page_path | prepend: site.baseurl | replace: '//', '/' }}">Next Posts &rarr;</a>
     </li>
     {% endif %}
 </ul>
