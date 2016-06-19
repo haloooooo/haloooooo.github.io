@@ -1,6 +1,6 @@
 # Site settings 网站设置
 title: linzb Blog
-SEOTitle: linzb.xyz | linzb Blog
+SEOTitle: linzb Blog  #菜单栏标题
 header-img: img/home-bg.jpg
 email: zebilin@outlook.com
 description: "关于computer science | 林壁，CSer，student | 与你一起发现更大的世界。"
