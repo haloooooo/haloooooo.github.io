@@ -1,7 +1,7 @@
 ---
 layout:     post
 title:      "计算机如何存储、解析整数？"
-subtitle:   "Slides: Progressive Web App, in my points of view"
+subtitle:   "无符号数、有符号数、补码、原码"
 iframe:     "http://linzb.xyz/Integer-Representations/"
 date:       2017-10-03
 author:     "Linzb"
@@ -11,25 +11,35 @@ tags:
 ---
 
 
-> 下滑这里查看更多内容
+> 计算机编码整数有两种不同的方式：一种只能表示非负数，另一种能够表示负数、零和正数。计算机是如何对这两种编码方式进行存储和解析的呢？
 
 
-### [Watch Slides → ](http://yanshuo.io/assets/player/?deck=5753088f79bc440063aa84f0#/)
+## Catagory
 
-<img src="http://huangxuan.me/pwa-in-my-pov/attach/qrcode.png" width="350" />
+1. [整数数据类型](#整数数据类型)
+2. [无符号数编码](#无符号数编码)
+3. [补码编码](#补码编码)
+4. [无符号数和有符号数的转换](#无符号数和有符号数的转换)
+5. [如何扩展一个整数的位](#如何扩展一个整数的位)
+6. [如何截断一个整数的位](#如何截断一个整数的位)
+7. [相关建议](#相关建议)
 
-### Catalog
-
-- WHAT is Progressive Web App?
-- 1 - Installability
-- 2 - App Shell
-- 3 - Offline
-    - SERVICE WORKER!
-- 4 - Re-engageable
-    - Push Notification
-- CONS in my pov
-- PROS in my pov
-- Why Web?
+##整数数据类型
 
 
-### Power by [Yanshuo.io（演说.io）](http://yanshuo.io)
+##无符号数编码
+
+
+##补码编码
+
+
+##无符号数和有符号数的转换
+
+
+##如何扩展一个整数的位
+
+
+##如何截断一个整数的位
+
+
+##相关建议
