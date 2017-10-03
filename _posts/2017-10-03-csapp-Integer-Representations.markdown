@@ -1,6 +1,6 @@
 ---
-layout:     keynote
-title:      "计算机如何存储解析整数？"
+layout:     post
+title:      "计算机如何存储、解析整数？"
 subtitle:   "Slides: Progressive Web App, in my points of view"
 iframe:     "http://linzb.xyz/Integer-Representations/"
 date:       2017-10-03
