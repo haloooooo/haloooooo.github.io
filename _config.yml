@@ -81,5 +81,5 @@ featured-condition-size: 5              # A tag will be featured if the size of 
 
 
 # Friends 友情链接
-friends: [
-]
+#friends: [
+#]
