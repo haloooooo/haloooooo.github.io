@@ -38,19 +38,64 @@ tags:
     <th>最大值</th>
   </tr>
   <tr>
-    <th>[signed]char</th>
+    <th>[signed] char</th>
     <th>-127</th>
     <th>127</th>
   </tr>
   <tr>
-    <th>[signed]char</th>
-    <th>-127</th>
-    <th>127</th>
+    <th>unsigned char</th>
+    <th>0</th>
+    <th>255</th>
   </tr>
   <tr>
-    <th>[signed]char</th>
-    <th>-127</th>
-    <th>127</th>
+    <th>short</th>
+    <th>-32767</th>
+    <th>32767</th>
+  </tr>
+  <tr>
+    <th>unsigned short</th>
+    <th>0</th>
+    <th>65535</th>
+  </tr>
+  <tr>
+    <th>int</th>
+    <th>-32767</th>
+    <th>32767</th>
+  </tr>
+  <tr>
+    <th>unsigned int</th>
+    <th>0</th>
+    <th>65535</th>
+  </tr>
+  <tr>
+    <th>long</th>
+    <th>-2 147 483 647</th>
+    <th>2 147 483 647</th>
+  </tr>
+  <tr>
+    <th>unsigned long</th>
+    <th>0</th>
+    <th>4 294 967 295</th>
+  </tr>
+  <tr>
+    <th>int32_t</th>
+    <th>-2 147 483 647</th>
+    <th>2 147 483 647</th>
+  </tr>
+  <tr>
+    <th>uint32_t</th>
+    <th>0</th>
+    <th>4 294 967 295</th>
+  </tr>
+  <tr>
+    <th>int64_t</th>
+    <th>-9 223 372 036 854 775 808</th>
+    <th>9 223 372 036 854 775 807</th>
+  </tr>
+  <tr>
+    <th>uint64_t</th>
+    <th>0</th>
+    <th>18 446 744 073 709 551 615</th>
   </tr>
 
 </table>
