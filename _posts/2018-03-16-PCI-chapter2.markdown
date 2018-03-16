@@ -51,17 +51,25 @@ critics={
 x = (x1,...,xn) 和 y = (y1,...,yn) 之间的欧几里得距离为：
 ![ ](/img/in-post/2018-03-16-PCI-chapter2.png)
 
+    from math import sqrt  
+    #相似性度量方法：欧几里德距离
     def sim_distance(prefs,person1,person2):
-        #相似性度量方法：欧几里德距离
+        # prefs:用户评价数据(上文中的critics)
+        # 计算用户person1与person2的相似度
+        #返回值介于0到1之间，1表示偏好相同
+
+        #统计双方都曾评价过的物品列表
         si={}
         for item in prefs[person1]:
             if item in prefs[person2]: si[item]=1
 
+        #如果两者没有共同之处，则返回0
         if len(si) == 0: return 0
 
+        #计算所有差值的平方和
         sum_of_squares = sum([pow(prefs[person1][item]-prefs[person2][item],2)
                             for item in prefs[person1] if item in prefs[person2]])
-
+        ##返回（距离+1）的倒数；将距离加1，避免被零整除的错误
         return 1/(1+sqrt(sum_of_squares))
 
 
@@ -81,13 +89,17 @@ x = (x1,...,xn) 和 y = (y1,...,yn) 之间的欧几里得距离为：
 以上列出的四个公式等价，其中E是数学期望，cov表示协方差，N表示变量取值的个数。
 本章使用第四个公式进行相似性度量。
 
+    #相似性度量方法：皮尔逊相关系数
     def sim_pearson(prefs,p1,p2):
-        #相似性度量方法：皮尔逊相关系数
+        #返回值介于-1到1之间，1表示两人对每件物品评价一致
+
+        #统计双方都曾评价过的物品列表
         si={}
         for item in prefs[p1]:
             if item in prefs[p2]: si[item] = 1
         n=len(si)
 
+        #如果两者没有共同的物品，则返回0
         if n==0:
             return 0
 
