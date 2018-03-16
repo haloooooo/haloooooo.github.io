@@ -51,7 +51,7 @@ critics={
 ![ x = (x1,...,xn) 和 y = (y1,...,yn) 之间的欧几里得距离为：][1]
 
 
-  [1]: /img/2018-03-16-PCI-chapter2.png
+  [1]: /img/in-post/2018-03-16-PCI-chapter2.png
 
 ###皮尔逊相关系数
 
