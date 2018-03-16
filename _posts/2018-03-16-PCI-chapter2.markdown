@@ -50,7 +50,7 @@ critics={
 
 x = (x1,...,xn) 和 y = (y1,...,yn) 之间的欧几里得距离为：
 ![ ](/img/in-post/2018-03-16-PCI-chapter2.png)
-
+```
     from math import sqrt  
     #相似性度量方法：欧几里德距离
     def sim_distance(prefs,person1,person2):
@@ -71,7 +71,7 @@ x = (x1,...,xn) 和 y = (y1,...,yn) 之间的欧几里得距离为：
                             for item in prefs[person1] if item in prefs[person2]])
         ##返回（距离+1）的倒数；将距离加1，避免被零整除的错误
         return 1/(1+sqrt(sum_of_squares))
-
+```
 
 
 
@@ -88,7 +88,7 @@ x = (x1,...,xn) 和 y = (y1,...,yn) 之间的欧几里得距离为：
 
 以上列出的四个公式等价，其中E是数学期望，cov表示协方差，N表示变量取值的个数。
 本章使用第四个公式进行相似性度量。
-
+```
     #相似性度量方法：皮尔逊相关系数
     def sim_pearson(prefs,p1,p2):
         #返回值介于-1到1之间，1表示两人对每件物品评价一致
@@ -116,7 +116,7 @@ x = (x1,...,xn) 和 y = (y1,...,yn) 之间的欧几里得距离为：
         if den==0: return 0
         r = num/den
         return r
-
+```
 ## 二、推荐
 
 以上相似性度量可以计算每一对用户的相似度，那么可以针对某一目标用户，找出与其兴趣最为相似的用户。
@@ -124,8 +124,38 @@ x = (x1,...,xn) 和 y = (y1,...,yn) 之间的欧几里得距离为：
 我们可以得到与某一目标用户兴趣相似的用户，然而我们的目的的是给目标用户推荐他可能喜欢的物品。如果从其相似用户评价高的电影中找随便挑其一个没看过的电影做一个推荐的话，这太随意了。如何预测用户对一个未评价过的物品的评价？为了杜绝这样的随意，采用一种加权平均的计算方式来预测目标用户对未观看过的电影的评价。以相似度作为权值，与用户越相似的其它用户对物品的评价，占权重越大。预测用户对物品评价，根据评价分数结果排序，给用户推荐评价分数高的物品。所以用户对物品的评价分数就可以通过如下公式预测：
   ![ ](/img/in-post/2018-03-16-PCI-chapter2-critics.png)
 
+```
+  def topMatches(prefs, person, n=5, similarity=sim_pearson):
+      '''返回prefs字典中与person最相似的n个 '''
+      scores=[(similarity(prefs, person, other), other)
+                  for other in prefs if other!=person]
+      scores.sort()
+      scores.reverse()
+      return scores[0:n]
 
+  def getRecommendations(prefs, person, similarity=sim_pearson):
+      '''利用prefs中其它人的评价与相关系数进行加权平均，为person提供建议'''
+      totals={}
+      simSums={}
 
+      for other in prefs:
+          if other==person: continue  #不与自己做比较
+          sim=similarity(prefs,person,other)
+
+          if sim<=0: continue     #忽略相似度小于等于零的情况
+          for item in prefs[other]:
+              if item not in prefs[person] or prefs[person][item]==0:
+                  totals.setdefault(item,0)
+                  totals[item]+=prefs[other][item]*sim
+                  simSums.setdefault(item,0)
+                  simSums[item]+=sim
+
+      rankings=[(total/simSums[item],item) for item,total in totals.items()]
+
+      rankings.sort()
+      rankings.reverse()
+      return rankings
+```
 
 
 
