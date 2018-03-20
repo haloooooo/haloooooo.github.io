@@ -1,6 +1,6 @@
 ---
 layout:     post
-title:      "对博客进行聚类：分层聚类、K-Mesns 聚类"
+title:      "对博客进行聚类：分层聚类、K-Means 聚类"
 subtitle:   "《集体智慧编程》 chapter 3"
 header-img: "img/post-bg-js-version.jpg"
 date:       2018-03-19
@@ -18,7 +18,7 @@ tags:
 为了对这些博客进行聚类，需要的数据是一组指定的词汇在每个博客出现的次数。根据单词出现的频度对博客进行聚类，或许可以帮助我们分析出是否存在一些博客经常撰写相似的主题或写作风格类似。
 
 ### 1、解析订阅源
-RSS订阅源是一个包含博客及其所有文章条目信息的简单的XML文档。为了给每个博客中的单词计数，首先第一步就是要解析这些订阅源。有一个非常不错的程序能够完成这项工作，它就是[Universal Feed Parser](https://pythonhosted.org/feedparser/index.html)。使用Universal Feed Parser，可以很轻松地从任何RSS或Atom订阅源中得到标题、链接和文章的条目。
+RSS订阅源是一个包含博客及其所有文章条目信息的简单的XML文档。为了给每个博客中的单词计数，首先第一步就是要解析这些订阅源。[Universal Feed Parser](https://pythonhosted.org/feedparser/index.html)是一个非常不错的Python库能够完成这项工作。使用Universal Feed Parser，可以很轻松地从任何RSS或Atom订阅源中得到标题、链接和文章的条目。
 ```
 import feedparser
 import re
@@ -93,17 +93,140 @@ if __name__ == '__main__':
 ```
 
 
-## 一、聚类
+##  一、分级聚类
+分级聚类算法（Hierarchical Cluster Analysis，HCA）通过连续不断的将最为相似的群组两两合并，来构造出一个群组的层级结构。其中的每个群组都是从一个简单元素开始的。在每次迭代的过程中，分级聚类算法会计算每两个群组间的距离，并将最近的两个群组合并成一个新的群组。这个过程一直重复下去，知道只剩下一个群组为止。
+
+我们可以发现，这个算法有点类似于哈夫曼树的构造：
+
+    1，查找节点集合中，距离最近的两个节点。
+
+    2，将找到的两个节点合并为一个节点，添加到节点集合中，并将先前的两个节点从节点集合中移除。
+
+    3，重复第一步和第二步，直到节点集合中只剩下一个节点。
+
+根据上述算法，我们可以得到一颗聚类二叉树。
+当使用上述算法的时候，距离是作为分类的基础。本章使用[皮尔逊相似性度量方法](http://linzb.xyz/2018/03/16/PCI-chapter2/)
+```
+class bicluster(object):    #定义二叉树节点
+    def __init__(self, vec, left=None, right=None, distance=0, id=None):
+                  #vec为单词数向量
+        self.left = left
+        self.right = right
+        self.vec = vec
+        self.id = id
+        self.distance = distance
+
+def hcluster(rows, distance=peason):    # rows为数据矩阵  peason 参见上一章
+    distances = {}
+    currentclustid = -1
+
+    # 初始化聚类为 数据集中的所有行
+    clust = [bicluster(rows[i], id=i) for i in range(len(rows))]
+
+    while len(clust) > 1:
+        lowestpair = (0, 1)
+        closest = distance(clust[0].vec, clust[1].vec)
+
+        # 遍历每一个配对，寻找最小距离  
+        for i in range(len(clust)):
+            for j in range(i+1, len(clust)):
+
+                # 用distances来缓存距离的计算值  
+                if (clust[i].id, clust[j].id) not in distances:
+                    distances[(clust[i].id, clust[j].id)] = distance(clust[i].vec, clust[j].vec)
+
+                d = distances[(clust[i].id, clust[j].id)]
+                if d < closest:
+                    closest = d
+                    lowestpair = (i, j)
+
+        # 计算两个聚类的平均值  
+        mergevec = [(clust[lowestpair[0]].vec[i] + clust[lowestpair[1]].vec[i]) / 2.0
+                            for i in range(len(clust[0].vec))]
+
+        # 建立新的聚类
+        newcluster = bicluster(mergevec, left=clust[lowestpair[0]],
+                                right=clust[lowestpair[1]],
+                                distance=closest, id=currentclustid)
+
+        # 不在原始集合中的聚类，其id为负数  
+        currentclustid -= 1
+        del clust[lowestpair[1]]
+        del clust[lowestpair[0]]
+        clust.append(newcluster)
+
+    return clust[0]
+```
 
 
-###  分级聚类
+### 可视化分级聚类-树形图
 
 
+## 二、K-Means 聚类
+k-平均算法（k-means clustering）作为一种聚类分析方法流行于数据挖掘领域。K-Means聚类的目的是：把n个点划分到k个聚类中，使得每个点都属于离他最近的均值（此即聚类中心）对应的聚类，以之作为聚类的标准。
 
-### K-Means 聚类
+经典K-means算法流程：
+
+    1、随机地初始化选择k个簇的中心（通常使用的初始化方法有Forgy和随机划分(Random Partition)方法）；
+    2、对剩余的每个对象，根据其与各簇中心的距离，将它赋给最近的簇；
+    3、重新计算每个簇的平均值，更新为新的簇中心；
+    4、不断重复2、3，直到准则函数收敛。
+```
+# K-均值聚类算法
+def kcluster(rows, distance=pearson, k=4):
+    '''
+    :param rows: 表示每一个博客词语的计数（即readfile函数中所返回的每一行的数据）
+    :param distance: 表示元素之间距离计算公式（这里使用皮尔逊相关度计算方法）
+    :param k: K-均值聚类的聚类个数K
+    :return: 最终聚类结果（k个聚类）
+    '''
+
+    # 确定每个点的最小值和最大值
+    # ranges = [(min([row[i] for row in rows]), max([row[i] for row in rows])) for i in range(len(rows[0]))]
+
+    # 随机创建k个中心点
+    # clusters = [[random.random() * (ranges[i][1] - ranges[i][0]) + ranges[i][0] for i in range(len(rows[0]))] for j in range(k)]
 
 
-## 二、可视化聚类-树形图
+    # 聚类迭代过程
+    lastmatches = None
+    for t in range(100): # 迭代次数为100次
+        print('Iteration %d' % t)
+        bestmatches = [[] for i in range(k)]
+
+        # 在每一行（每一个数据项）中寻找距离最近的中心点
+        for j in range(len(rows)):
+            row = rows[j]
+            # 对于每一行row（每一个数据项），求出与该row距离最近的中心点bestmatch
+            bestmatch = 0
+            for i in range(k):
+                d = distance(clusters[i], row)
+                if d < distance(clusters[bestmatch], row):
+                    bestmatch = i
+            # bestmatches[bestmatch].append(row)
+            bestmatches[bestmatch].append(j)
+
+
+        # 如果迭代结果与上一次相同，则整个过程结束
+        if bestmatches == lastmatches:
+            break
+        lastmatches = bestmatches
+
+        # 把中心点移到其所有成员的平均位置处
+        for i in range(k):
+            avgs = [0.0] * len(rows[0])
+            if len(bestmatches[i]) > 0:
+                for rowid in bestmatches[i]:
+                    for m in range(len(rows[rowid])):
+                        avgs[m] += rows[rowid][m]
+                for j in range(len(avgs)):
+                    avgs[j] = avgs[j] / len(bestmatches[i])
+                clusters[i] = avgs
+
+    return bestmatches
+```
+
+
 
 
 
