@@ -160,7 +160,7 @@ def hcluster(rows, distance=peason):    # rows为数据矩阵  peason 参见上�
 
 
 ### 可视化分级聚类-树形图
-
+待续。。
 
 ## 二、K-Means 聚类
 k-平均算法（k-means clustering）作为一种聚类分析方法流行于数据挖掘领域。K-Means聚类的目的是：把n个点划分到k个聚类中，使得每个点都属于离他最近的均值（此即聚类中心）对应的聚类，以之作为聚类的标准。
@@ -236,3 +236,5 @@ def kcluster(rows, distance=pearson, k=4):
 
 ## 三、参考
 [知乎：用于数据挖掘的聚类算法有哪些，各有何优势？](https://www.zhihu.com/question/34554321)
+
+[集体智慧编程2：聚类算法（分级聚类和K-均值聚类）](https://www.cnblogs.com/kkkwoniu/p/7801359.html)
