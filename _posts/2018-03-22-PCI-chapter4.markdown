@@ -1,6 +1,6 @@
 ---
 layout:     post
-title:      "搜索与排名:一个简单的搜索引擎的实现"
+title:      "搜索与排名:一个简单的搜索引擎的实现 (一)"
 subtitle:   "《集体智慧编程》 chapter 4"
 header-img: "img/post-bg-js-version.jpg"
 date:       2018-03-22
@@ -10,13 +10,19 @@ tags:
     - machine learning
 ---
 # 搜索引擎
-网页抓取：从一个或一组特定的网页开始，根据网页内部链接逐步追踪到其他网页。这样递归进行爬取，直到到达一定深度或达到一定数量为止。
-建立索引：建立数据表，包含文档中所有单词的位置信息，文档本身不一定要保存到数据库中，索引信息只需简单的保存到一个指向文档所在位置的引用即可。
-查询和排名：根据合适的网页排序方法，返回一个经过排序的页面列表。
+一个简单的搜索引擎主要有以下三个部分组成：
+
+    网页抓取：从一个或一组特定的网页开始，根据网页内部链接逐步追踪到其他网页。
+             这样递归进行爬取，直到到达一定深度或达到一定数量为止。
+
+    建立索引：建立数据表，包含文档中所有单词的位置信息，文档本身不一定要保存到数据库中，
+             索引信息只需简单的保存到一个指向文档所在位置的引用即可。
+
+    查询和排名：根据合适的网页排序方法，返回一个经过排序的页面列表。
 
 ## 零、网页抓取：一个简单的爬虫
 
-首先建立一个 Python 模块，取名searchengine，其中包含两个类，本章主要实现 crawler 类，用于检索网页和创建数据库。我们会用到 SQLite 数据库。
+首先建立一个 Python 模块，取名searchengine，其中包含两个类，本节主要实现 crawler 类，用于检索网页和创建数据库。我们会用到 SQLite 数据库。
 
 程序框架：
 ```
@@ -119,7 +125,7 @@ class crawler:
     # <a class="sister" href="http://example.com/tillie" id="link3">Tillie</a>
 
 ### 3、SQL数据库
-SQLite是一种嵌入式数据库，它的数据库就是一个文件。由于SQLite本身是C写的，而且体积很小，所以，经常被集成到各种应用程序中，甚至在iOS和Android的App中都可以集成。Python就内置了SQLite3，所以，在Python中使用SQLite，不需要安装任何东西，直接使用。
+[SQLite](https://docs.python.org/3.6/library/sqlite3.html?highlight=sqlite#module-sqlite3)是一种嵌入式数据库，它的数据库就是一个文件。由于SQLite本身是C写的，而且体积很小，所以，经常被集成到各种应用程序中，甚至在iOS和Android的App中都可以集成。Python就内置了SQLite3，所以，在Python中使用SQLite，不需要安装任何东西，直接使用。
 
 我们在Python交互式命令行实践一下：
 ```
@@ -162,8 +168,11 @@ SQLite是一种嵌入式数据库，它的数据库就是一个文件。由于SQ
 >>> conn.close()
 ```
 使用Python的DB-API时，只要搞清楚Connection和Cursor对象，打开后一定记得关闭，就可以放心地使用。
+
 使用Cursor对象执行insert，update，delete语句时，执行结果由rowcount返回影响的行数，就可以拿到执行结果。
+
 使用Cursor对象执行select语句时，通过featchall()可以拿到结果集。结果集是一个list，每个元素都是一个tuple，对应一行记录。
+
 如果SQL语句带有参数，那么需要把参数按照位置传递给execute()方法，有几个?占位符就必须对应几个参数，例如：
 
 cursor.execute('select * from user where name=? and pwd=?', ('abc', '123456'))
@@ -206,22 +215,122 @@ def crawl(self, pages, depth=2):
 
 
 
-
-
 ##  一、建立索引
 
+### 1、建立数据库表
+
+我们通过爬虫程序得到网页的信息之后，我们就需要将这些信息存入数据库，并建立索引。
+```
+urllist：     保存已经索引过的URL
+wordlist：    保存索引到的单词
+wordlocation：保存单词在文档中的位置信息（location=i：单词为网页上第i个出现的单词）
+link:         保存网页url(fromid)上的超链接url(toid)
+linkwords:    保存与对应超链接的相关单词
+```
+
+本书中建立的数据库表如下
+
+  ![ ](/img/in-post/2018-03-16-PCI-chapter4-schema.png)
 
 
-### 可视化分级聚类-树形图
+```
+def createindextables(self):
+    self.con.execute('create table urllist(url)')
+    self.con.execute('create table wordlist(word)')
+    self.con.execute('create table wordlocation(urlid, wordid, location)')
+    self.con.execute('create table link(fromid integer, toid integer)')
+    self.con.execute('create table linkwords(wordid, linkid)')
+
+    self.con.execute('create index wordidx on wordlist(word)')
+    self.con.execute('create index urlidx on urllist(url)')
+    self.con.execute('create index wordurlidx on wordlocation(wordid)')
+    self.con.execute('create index urltoidx on link(toid)')
+    self.con.execute('create index urlfromidx on link(fromid)')
+```
+### 2、在网页上查找单词
+
+```
+# 从一个HTML网页中提取文字（不带标签的）
+def gettextonly(self, soup):
+    v = soup.string
+    if v == None:
+        c = soup.contents
+        resulttext = ''
+        for t in c:
+            subtext = self.gettextonly(t)
+            resulttext += subtext +'\n'
+        return resulttext
+    else:
+        return v.strip()
+
+# 根据任何非空白字符进行分词处理
+def separatewords(self, text):
+    splitter = re.compile('\\w*')
+    return [s.lower() for s in splitter.split(text) if s!=' ']
+```
+
+### 3、加入索引
 
 
-## 二、查询和排名
+```
+# 如果url已经建过索引，则返回true
+def isindexed(self, url):
+    u = self.con.execute("select rowid from urllist where url=?",(url,)).fetchone()
+    if u!= None:
+        # 检查它是否已经被检索过了
+        v = self.con.execute('select * from woedlocation where urlid = ?', (u[0],)).fetchone()
+        if v!=None: return True
+    return False
+
+# 添加一个关联两个网页的链接
+def addlinkref(self, urlFrom, urlTo, linkText):
+    words=self.separateWords(linkText)
+    fromid=self.getentryid('urllist','url',urlFrom)
+    toid=self.getentryid('urllist','url',urlTo)
+    if fromid==toid: return
+    cur=self.con.execute("insert into link(fromid,toid) values (?,?)", (fromid,toid))
+    linkid=cur.lastrowid
+    for word in words:
+      if word in ignorewords: continue
+      wordid=self.getentryid('wordlist','word',word)
+      self.con.execute("insert into linkwords(linkid,wordid) values (?,?)", (linkid,wordid))
+
+# 辅助函数，用于获取条目的id，并且如果条目不存在，就将其加入数据库中
+def getentryid(self, table, field, value, createnew=True):
+    cur = self.con.execute("select rowid from %s where %s='%s'" % (table,field,value))
+    res = cur.fetchone()
+    if res == None:
+        cur = self.con.execute("insert into %s(%s) values (%s)" %(table,field,value))
+        return cur.lastrowid
+    else:
+        return res[0]
+
+# 为每个网页建立索引
+def addtoindex(self, url, soup):
+    if self.isindexed(url): return
+    print('Indexing' + url)
+
+    # 获取每个单词
+    text = self.gettextonly(soup)
+    words = self.separatewords(text)
+
+    # 得到URL的id
+    urlid = self.getentryid('urllist', 'url', url)
+
+    # 将每个单词与该url关联
+    for i in range(len(words)):
+        word = words[i]
+        if word in ignorewords: continue
+        wordid = self.getentryid('wordlist', 'word', word)
+        self.con.execute('insert into wordlocation(urlid, wordid, location) \
+                            values(?, ?, ?)', (urlid, wordid, i))
+
+```
 
 
 
-
-
-
-## 三、参考
+## 二、参考
 
 [廖雪峰的官方网站](https://www.liaoxuefeng.com/wiki/001374738125095c955c1e6d8bb493182103fac9270762a000/001388320596292f925f46d56ef4c80a1c9d8e47e2d5711000)
+
+[集体智慧编程第四章](https://blog.csdn.net/gavin_yueyi/article/details/49028315)
