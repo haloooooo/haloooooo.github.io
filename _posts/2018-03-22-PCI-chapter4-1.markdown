@@ -193,14 +193,14 @@ def crawl(self, pages, depth=2):
             except:
                 print("Could not open %s" % page)
                 continue
-            soup = BeautifulSoup(c.read()) #获取该网页的内容并进行解析
+            soup = BeautifulSoup(c.read(), 'html5lib') #获取该网页的内容并进行解析
             self.addtoindex(page, soup)    #建立“网页—词—位置”的关系，存入 wordlocation 数据表中。
 
             #
             links = soup('a')   
             for link in links:          #从网页中寻找链接
-                if ('herf' in dict(link.attrs)):
-                    url = urljoin(page, link['herf']) #若有链接，则将链接的相对路径转换成绝对路径
+                if ('href' in dict(link.attrs)):
+                    url = urljoin(page, link['href']) #若有链接，则将链接的相对路径转换成绝对路径
                     if url.find("'") != -1: continue
 
                     url = url.split('#')[0]
@@ -265,8 +265,8 @@ def gettextonly(self, soup):
 
 # 根据任何非空白字符进行分词处理
 def separatewords(self, text):
-    splitter = re.compile('\\w*')
-    return [s.lower() for s in splitter.split(text) if s!=' ']
+    splitter = re.compile('\\W*')
+    return [s.lower() for s in splitter.split(text) if s!='']
 ```
 
 ### 3、加入索引
@@ -277,14 +277,13 @@ def separatewords(self, text):
 def isindexed(self, url):
     u = self.con.execute("select rowid from urllist where url=?",(url,)).fetchone()
     if u!= None:
-        # 检查它是否已经被检索过了
-        v = self.con.execute('select * from woedlocation where urlid = ?', (u[0],)).fetchone()
+        v = self.con.execute('select * from wordlocation where urlid = ?', (u[0],)).fetchone()
         if v!=None: return True
     return False
 
 # 添加一个关联两个网页的链接
 def addlinkref(self, urlFrom, urlTo, linkText):
-    words=self.separateWords(linkText)
+    words=self.separatewords(linkText)
     fromid=self.getentryid('urllist','url',urlFrom)
     toid=self.getentryid('urllist','url',urlTo)
     if fromid==toid: return
@@ -294,6 +293,7 @@ def addlinkref(self, urlFrom, urlTo, linkText):
       if word in ignorewords: continue
       wordid=self.getentryid('wordlist','word',word)
       self.con.execute("insert into linkwords(linkid,wordid) values (?,?)", (linkid,wordid))
+
 
 # 辅助函数，用于获取条目的id，并且如果条目不存在，就将其加入数据库中
 def getentryid(self, table, field, value, createnew=True):
@@ -308,23 +308,19 @@ def getentryid(self, table, field, value, createnew=True):
 # 为每个网页建立索引
 def addtoindex(self, url, soup):
     if self.isindexed(url): return
-    print('Indexing' + url)
+    print('Indexing ' + url)
 
-    # 获取每个单词
     text = self.gettextonly(soup)
     words = self.separatewords(text)
 
-    # 得到URL的id
-    urlid = self.getentryid('urllist', 'url', url)
+    urlid = self.getentryid("urllist", "url", url)
 
-    # 将每个单词与该url关联
     for i in range(len(words)):
         word = words[i]
         if word in ignorewords: continue
         wordid = self.getentryid('wordlist', 'word', word)
         self.con.execute('insert into wordlocation(urlid, wordid, location) \
                             values(?, ?, ?)', (urlid, wordid, i))
-
 ```
 
 
