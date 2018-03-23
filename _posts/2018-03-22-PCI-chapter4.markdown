@@ -15,8 +15,8 @@ tags:
 查询和排名：根据合适的网页排序方法，返回一个经过排序的页面列表。
 
 ## 零、网页抓取：一个简单的爬虫
-该爬虫程序首先输入一个初始的网页，获取该网页的内容并进行解析，建立“网页—词—位置”的关系，存入 wordlocation 数据表中。随后从网页中寻找链接，若有链接，则将链接的相对路径转换成绝对路径，并存储，作为下一层检索的URL。同时将“原网页URL—链接URL—链接文本”关系保存到link表中。至此，一层爬取完毕。根据新加入的URL，爬取下一层网页。
 
+首先建立一个 Python 模块，取名searchengine，其中包含两个类，本章主要实现 crawler 类，用于检索网页和创建数据库。我们会用到 SQLite 数据库。
 
 程序框架：
 ```
@@ -59,14 +59,14 @@ class crawler:
   # 期间为网页建立索引
   def crawl(self, pages, depth=2):
     pass
-    
+
   # 创建数据库表
   def createindextables(self):
     pass
 ```
 
 
-在此之前，先简单介绍两个相关函数库。
+在此之前，先简单介绍两个相关函数库及 SQLite 数据库。
 ### 1、urllib库
 [urllib](https://docs.python.org/3.6/library/urllib.html)是Python自带的标准库，无需安装，直接可以用。包括以下模块：
 
@@ -74,6 +74,7 @@ class crawler:
     urllib.error 异常处理模块：    处理由urllib.request引发的异常
     urllib.parse url解析模块
     urllib.robotparser robots.txt解析模块
+
 本章中，将利用 urllib.request 模块下载等待建立索引的网页。
 
 ### 2、Beautiful Soup
@@ -117,7 +118,59 @@ class crawler:
     soup.find(id="link3")
     # <a class="sister" href="http://example.com/tillie" id="link3">Tillie</a>
 
-### 3、爬虫
+### 3、SQL数据库
+SQLite是一种嵌入式数据库，它的数据库就是一个文件。由于SQLite本身是C写的，而且体积很小，所以，经常被集成到各种应用程序中，甚至在iOS和Android的App中都可以集成。Python就内置了SQLite3，所以，在Python中使用SQLite，不需要安装任何东西，直接使用。
+
+我们在Python交互式命令行实践一下：
+```
+# 导入SQLite驱动:
+>>> import sqlite3
+# 连接到SQLite数据库
+# 数据库文件是test.db
+# 如果文件不存在，会自动在当前目录创建:
+>>> conn = sqlite3.connect('test.db')
+# 创建一个Cursor:
+>>> cursor = conn.cursor()
+# 执行一条SQL语句，创建user表:
+>>> cursor.execute('create table user (id varchar(20) primary key, name varchar(20))')
+<sqlite3.Cursor object at 0x10f8aa260>
+# 继续执行一条SQL语句，插入一条记录:
+>>> cursor.execute('insert into user (id, name) values (\'1\', \'Michael\')')
+<sqlite3.Cursor object at 0x10f8aa260>
+# 通过rowcount获得插入的行数:
+>>> cursor.rowcount
+1
+# 关闭Cursor:
+>>> cursor.close()
+# 提交事务:
+>>> conn.commit()
+# 关闭Connection:
+>>> conn.close()
+```
+我们再试试查询记录：
+```
+>>> conn = sqlite3.connect('test.db')
+>>> cursor = conn.cursor()
+# 执行查询语句:
+>>> cursor.execute('select * from user where id=?', ('1',))
+<sqlite3.Cursor object at 0x10f8aa340>
+# 获得查询结果集:
+>>> values = cursor.fetchall()
+>>> values
+[(u'1', u'Michael')]
+>>> cursor.close()
+>>> conn.close()
+```
+使用Python的DB-API时，只要搞清楚Connection和Cursor对象，打开后一定记得关闭，就可以放心地使用。
+使用Cursor对象执行insert，update，delete语句时，执行结果由rowcount返回影响的行数，就可以拿到执行结果。
+使用Cursor对象执行select语句时，通过featchall()可以拿到结果集。结果集是一个list，每个元素都是一个tuple，对应一行记录。
+如果SQL语句带有参数，那么需要把参数按照位置传递给execute()方法，有几个?占位符就必须对应几个参数，例如：
+
+cursor.execute('select * from user where name=? and pwd=?', ('abc', '123456'))
+
+
+### 4、爬虫
+该爬虫程序首先输入一个初始的网页，获取该网页的内容并进行解析，建立“网页—词—位置”的关系，存入 wordlocation 数据表中。随后从网页中寻找链接，若有链接，则将链接的相对路径转换成绝对路径，并存储，作为下一层检索的URL。同时将“原网页URL—链接URL—链接文本”关系保存到link表中。至此，一层爬取完毕。根据新加入的URL，爬取下一层网页。
 
 ```
 # 从一小组网页pages开始进行广度优先搜索，直至某一给定深度，
@@ -155,22 +208,6 @@ def crawl(self, pages, depth=2):
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 ##  一、建立索引
 
 
@@ -186,3 +223,5 @@ def crawl(self, pages, depth=2):
 
 
 ## 三、参考
+
+[廖雪峰的官方网站](https://www.liaoxuefeng.com/wiki/001374738125095c955c1e6d8bb493182103fac9270762a000/001388320596292f925f46d56ef4c80a1c9d8e47e2d5711000)
