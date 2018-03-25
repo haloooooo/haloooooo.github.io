@@ -3,32 +3,145 @@ layout:     post
 title:      "搜索与排名:一个简单的搜索引擎的实现 (二)"
 subtitle:   "《集体智慧编程》 chapter 4"
 header-img: "img/post-bg-js-version.jpg"
-date:       2018-03-23
+date:       2018-03-25
 author:     "Linzb"
 tags:
     - 集体智慧编程
     - machine learning
 ---
-# 搜索引擎
-一个简单的搜索引擎主要有以下三个部分组成：
+# 排名：对搜索到的网页进行排序
+  查询和排名：根据合适的网页排序方法，返回一个经过排序的页面列表。
 
-    网页抓取：从一个或一组特定的网页开始，根据网页内部链接逐步追踪到其他网页。
-             这样递归进行爬取，直到到达一定深度或达到一定数量为止。
+从上一节，我们已经成功获得了与查询条件相关的网页。面对大量网页，我们需要从中找出与查询条件最为匹配的页面。为了解决这个问题，需要一种对网页与查询词相关度的评价方法，并且根据评价结果进行排序。
+## 零、基于内容的排序
 
-    建立索引：建立数据表，包含文档中所有单词的位置信息，文档本身不一定要保存到数据库中，
-             索引信息只需简单的保存到一个指向文档所在位置的引用即可。
+### 单词频度
 
-    查询和排名：根据合适的网页排序方法，返回一个经过排序的页面列表。
+### 文档位置
 
-## 零、网页抓取：一个简单的爬虫
-
-
-
-##  一、建立索引
+### 单词距离
 
 
 
 
+##  一、利用外部回指指针
+
+### 简单计数
+
+### PageRank 算法
+
+### 利用链接文本
+
+
+
+## 二、从点击中学习
+在线应用的一个最大优势就在于，它们会持续收到以用户行为为表现形式的反馈信息。对于搜索引擎而言，每一位用户可以通过只点击某条结果，而不选择点击其它内容，向引擎及时提供有关他对搜索结果喜好程度的信息。
+
+为了实现这一目的，我们将构建一个人工神经网络，向其提供：查询条件中的单词，返回给用户的搜索结果，以及用户的点击决策，然后再对其加以训练。一旦网络经过了许多不同的点击训练，我们就可以利用它来改进搜索结果的排序，以更好的反映用户在过去一段时间内的实际点击情况。
+
+### 1、构建神经网络
+本例中，神经网络结构由三层结构，第一层神经元接受输入，即用户输入的单词；最后一层神经元给予输出，即返回一组URL及其权重列表。而且本例中不是先预先创建一个隐藏层有几千个节点，全部链接均已就绪的巨大网络，我们只在需要时候创建新的隐藏节点会更加高效，更加简单。每传入一组以前从未见过的单词组合，该网络的构建函数就会在隐藏层中建立一个新的节点。随后函数会为单词与隐藏节点之间，以及查询节点与查询所返回的URL结果之间，建立其具有默认权重的链接。随着查询的增多，这个网络也会很大，输入层隐藏层以及输出层之间的链接将会变得非常复杂。
+```
+from math import tanh
+import sqlite3 as sqlite
+
+class searchnet:
+    def __init__(self, dbname):
+        self.con = sqlite.connect(dbname)
+
+    def __del__(self):
+        self.con.close()
+
+    def maketable(self):
+        #建立三层神经网络的数据库
+
+        self.con.execute('create table hiddennodes(create_key)')  #隐藏层数据库表
+        self.con.execute('create table wordhidden(fromid, toid, strength)') #单词层到隐藏层的权重(连接强度)表
+        self.con.execute('create table hiddenurl(fromid, toid, strength)')    #隐藏层到输出层的权重表
+        self.con.commit()
+
+    def getstrength(self, fromid, toid, layer):
+        #从数据库查询权重(连接强度) 默认值分别为：-0.2 0
+        if layer == 0:
+            table = 'wordhiden'
+        else:
+            table = 'hiddenurl'
+
+        res = self.con.execute('select strength from %s where fromid = %d and toid = %d'
+                                        % (table, fromid, toid)).fetchone()
+        if res == None:
+            if layer == 0:
+                return -0.2
+            if layer == 1:
+                return 0
+        else:
+            return res[0]
+
+    def setstrength(self, fromid, toid, layer, strength):
+        #设置（更新）连接强度
+        if layer == 0:
+            table = 'wordhidden'
+        else:
+            table = 'hiddenurl'
+        res = self.con.execute('select strength from %s where fromid = %d and toid = %d'
+                                        %(table, fromid, toid)).fetchone()
+        if res == None:
+            self.con.execute('insert into %s (fromid, toid, strength) values(%d, %d, %f)'
+                                        %(table, fromid, toid, strength))
+        else:
+            rowid = res[0]
+            self.con.execute('update %s set strength = %f where rowid = %d' %(table, strength, rowid))
+
+    def generatehiddennode(self, wordids, urls):
+        #输入wordid的list 和对应的url的list 生成隐藏层节点
+        if len(wordids) > 3: return None
+
+        #检查我们是否已经为这组单词建立好了一个结点
+        createkey = '_'.join(sorted([str(wi) for wi in wordids])) #产生:w1_w2_w3
+        res = self.con.execute("select rowid from hiddennodes where create_key ='%s'" %(createkey)).fetchone()
+
+        #如果没有，则建立
+        if res == None:
+            cur = self.con.execute("insert into hiddennodes(create_key) values('%s')" %(createkey))
+            hiddenid = cur.lastrowid
+            #设置默认权重
+            for wordid in wordids:
+                self.setstrength(wordid, hiddenid, 0, 1.0/len(wordids)) #默认权重为1/len(wordids)
+            for url in urls:
+                self.setstrength(hiddenid, url, 1, 0.1)     #默认权重值为0.1
+            self.con.commit()
+```
+
+执行以下test代码后：
+```
+if __name__ == '__main__':
+    mynet = searchnet('nn.db')
+    #mynet.maketable()
+    wWorld, wRiver, wBank = 101, 102, 103
+    uWorldBank, uRiver, uEarth = 201,202,203
+    mynet.generatehiddennode([wWorld, wBank], [uWorldBank, uRiver, uEarth])
+    for c in mynet.con.execute('select * from wordhidden'):
+        print(c)
+    for c in mynet.con.execute('select * from hiddenurl'):
+        print(c)
+```
+输出：
+```
+(101, 1, 0.5)
+(103, 1, 0.5)
+(1, 201, 0.1)
+(1, 202, 0.1)
+(1, 203, 0.1)
+```
+创建的神经网络如下图：
+
+
+![](/img/in-post/2018-03-16-PCI-chapter4-2-example-net.png)
+
+```
+x1 = 101    x2 = 103   |   h = 1  | y1 = 201    y2 = 202    y3 = 203
+w1 = 0.5    w2 = 0.5   |          | w'1 = 0.1   w'2 = 0.1   w'3 = 0.1
+```
 ## 二、参考
 
 [廖雪峰的官方网站](https://www.liaoxuefeng.com/wiki/001374738125095c955c1e6d8bb493182103fac9270762a000/001388320596292f925f46d56ef4c80a1c9d8e47e2d5711000)
