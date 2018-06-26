@@ -2,7 +2,7 @@
 layout:     post
 title:      "神经网络"
 subtitle:   "《机器学习》 chapter 5"
-header-img: "img/post-bg-js-version.jpg"
+header-img: "img/post-bg-2015.jpg"
 date:       2018-03-28
 author:     "Linzb"
 tags:
