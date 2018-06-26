@@ -2,7 +2,7 @@
 layout:     post
 title:      "朴素贝叶斯"
 subtitle:   "Naive Bayes"
-header-img: "img/post-bg-js-version.jpg"
+header-img: "img/in-post／2018-06-22-Naive-Bayes.jpg"
 date:       2018-06-22
 author:     "Linzb"
 tags:
@@ -16,16 +16,16 @@ tags:
 ## 零、条件概率、贝叶斯公式
 我们先看看条件独立公式，如果X和Y相互独立，则有：
 ```
-P(X,Y)=P(X)P(Y)
+P(X,Y) = P(X)P(Y)
 ```
 我们接着看看条件概率公式：
 ```
-P(Y|X)=P(X,Y)/P(X)
-P(X|Y)=P(X,Y)/P(Y)
+P(Y|X) = P(X,Y)/P(X)
+P(X|Y) = P(X,Y)/P(Y)
 ```
 或者说:
 ```
-P(Y|X)=P(X|Y)P(Y)/P(X)
+P(Y|X) = P(X|Y)P(Y)/P(X)
 ```
 接着看看全概率公式
 ```
