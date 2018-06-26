@@ -2,7 +2,7 @@
 layout:     post
 title:      "朴素贝叶斯"
 subtitle:   "Naive Bayes"
-header-img: "img/in-post／2018-06-22-Naive-Bayes.jpg"
+header-img: "img/2018-06-22-Naive-Bayes.jpg"
 date:       2018-06-22
 author:     "Linzb"
 tags:
