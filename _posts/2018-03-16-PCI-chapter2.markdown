@@ -162,3 +162,4 @@ x = (x1,...,xn) 和 y = (y1,...,yn) 之间的欧几里得距离为：
 
 ## 三、参考
 [各种距离算法汇总](http://blog.csdn.net/mousever/article/details/45967643)
+[数据相似性的度量方法总结](https://blog.csdn.net/guoziqing506/article/details/51779536)
